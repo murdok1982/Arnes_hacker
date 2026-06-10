@@ -1,0 +1,56 @@
+[project]
+name = "arnes-fsociety"
+version = "0.1.0"
+description = "Arnes de Ciberguerra Estatal - Red Team Automation Framework"
+authors = [{name = "FSOCIETY State Division", email = "ops@fsociety.state"}]
+requires-python = ">=3.11"
+dependencies = [
+    "deepagents>=0.5.0",
+    "langchain-ollama>=0.2.0",
+    "langchain-core>=0.3.0",
+    "langgraph>=0.2.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.0.0",
+    "redis>=5.0.0",
+    "sqlalchemy>=2.0.0",
+    "aiosqlite>=0.20.0",
+    "docker>=7.0.0",
+    "python-nmap>=0.7.1",
+    "dnspython>=2.6.0",
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "paramiko>=3.4.0",
+    "cryptography>=42.0.0",
+]
+
+[project.optional-dependencies]
+offensive = [
+    "impacket>=0.12.0",
+    "pwntools>=4.12.0",
+    "shodan>=1.31.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["arnes_fsociety"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "S", "B", "A", "C4", "SIM"]
+ignore = ["S603", "S607"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

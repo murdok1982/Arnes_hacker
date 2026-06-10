@@ -1,0 +1,64 @@
+# Better-Harness Configuration
+# Configuracion para auto-mejora continua del arnes
+
+[experiment]
+name = "arnes-fsociety-optimization"
+runner = "pytest"
+workspace_root = "D:/Arnes para windows potente/arnes-fsociety"
+model = "ollama:fsociety:latest"
+max_iterations = 10
+
+[better_agent]
+model = "ollama:fsociety:latest"
+max_turns = 50
+
+[runner.pytest]
+project_root = "D:/Arnes para windows potente/arnes-fsociety/evals"
+model_flag = "--model"
+summary_flag = "--evals-report-file"
+pytest_args = ["-v", "--tb=short"]
+
+# Surfaces que el agente puede optimizar
+[surfaces.prompt]
+kind = "workspace_file"
+target = "prompts/orchestrator.txt"
+filename = "orchestrator.txt"
+base_file = "prompts/orchestrator.txt"
+
+[surfaces.recon_prompt]
+kind = "workspace_file"
+target = "subagents/recon.py"
+filename = "recon.py"
+base_file = "subagents/recon.py"
+
+[surfaces.exploit_prompt]
+kind = "workspace_file"
+target = "subagents/exploit.py"
+filename = "exploit.py"
+base_file = "subagents/exploit.py"
+
+# Casos de evaluacion
+[[cases]]
+case_id = "tests/evals/test_recon.py::test_nmap_scan"
+split = "train"
+stratum = "recon"
+
+[[cases]]
+case_id = "tests/evals/test_exploit.py::test_sqlmap_injection"
+split = "train"
+stratum = "exploit"
+
+[[cases]]
+case_id = "tests/evals/test_osint.py::test_domain_enum"
+split = "holdout"
+stratum = "osint"
+
+[[cases]]
+case_id = "tests/evals/test_post_exploit.py::test_privilege_escalation"
+split = "holdout"
+stratum = "post_exploit"
+
+[[cases]]
+case_id = "tests/evals/test_integration.py::test_full_mission"
+split = "scorecard"
+stratum = "integration"
