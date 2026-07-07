@@ -1,63 +1,9 @@
-# ARNES FSOCIETY - .gitignore
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
 venv/
-env/
-ENV/
-.venv
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Environment
-.env
-.env.local
-
-# Output
-output/
-logs/
-*.log
-
-# Memory Database
-memory/*.db
-memory/*.sqlite
-memory/*.sqlite3
-
-# Docker
-.docker/
-
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Temporary
-*.tmp
-*.bak
-*.cache
 __pycache__/
-
-# Test
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Build
-dist/
-build/
-*.egg-info/
-
-# Secrets
-*.key
-*.pem
-*.p12
-credentials.json
+*.pyc
+.env
+memory/*.db
+output/*
+!output/.gitkeep
+static/*
+bitagorassesion

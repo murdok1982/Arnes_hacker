@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARNES HACKER v2.0</title>
+<style>
+:root{--bg:#0a0e0a;--fg:#00ff41;--fg2:#00cc33;--fg3:#008f20;--cyan:#00f0ff;--red:#ff3333;--yellow:#ffff00;--orange:#ff8800;--panel:rgba(0,20,0,0.85);--border:rgba(0,255,65,0.2);--glow:0 0 10px rgba(0,255,65,0.3);--font:'Courier New',monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);display:flex;flex-direction:column}
+
+#matrixCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.08}
+
+.app{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh}
+
+/* HEADER */
+.header{background:rgba(0,10,0,0.95);border-bottom:1px solid var(--border);padding:6px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;backdrop-filter:blur(10px)}
+.header h1{font-size:15px;color:var(--fg);letter-spacing:3px;text-shadow:var(--glow)}
+.header h1 span{color:var(--cyan)}
+.header .info{display:flex;gap:14px;align-items:center}
+.header .info .badge{font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:3px;cursor:pointer;transition:0.2s}
+.header .info .badge:hover{border-color:var(--fg);box-shadow:var(--glow)}
+.header .info .badge.ollama-on{color:var(--fg)}
+.header .info .badge.ollama-off{color:var(--red);border-color:var(--red)}
+
+/* CONTENT */
+.content{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:rgba(0,8,0,0.9);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;backdrop-filter:blur(5px)}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border)}
+.sidebar-tabs button{flex:1;background:none;border:none;color:var(--fg3);padding:6px;font-family:var(--font);font-size:10px;cursor:pointer;transition:0.2s;letter-spacing:1px}
+.sidebar-tabs button:hover{color:var(--fg);background:rgba(0,255,65,0.05)}
+.sidebar-tabs button.active{color:var(--fg);border-bottom:2px solid var(--fg)}
+.sidebar-content{flex:1;overflow-y:auto;padding:6px}
+.sidebar-content .section{display:none}
+.sidebar-content .section.active{display:block}
+.sidebar-content .item{padding:5px 6px;font-size:10px;cursor:pointer;border-bottom:1px solid rgba(0,255,65,0.08);transition:0.15s;word-break:break-all;line-height:1.3}
+.sidebar-content .item:hover{background:rgba(0,255,65,0.08)}
+.sidebar-content .item .s-status{font-size:8px;color:var(--fg3)}
+.sidebar-content .item .s-date{font-size:8px;color:var(--fg3)}
+.sidebar-content .item .s-mission{color:var(--fg)}
+.sidebar-content h4{font-size:9px;color:var(--fg3);text-transform:uppercase;letter-spacing:1px;margin:8px 0 4px 6px}
+.sidebar-content .cred-item{padding:3px 6px;font-size:10px;border-bottom:1px solid rgba(255,255,0,0.08)}
+.sidebar-content .cred-item .cred-user{color:var(--yellow)}
+.sidebar-content .cred-item .cred-pass{color:var(--orange)}
+.sidebar-content .cred-item .cred-target{color:var(--fg3);font-size:8px}
+
+/* MAIN PANEL */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.toolbar{background:rgba(0,10,0,0.9);border-bottom:1px solid var(--border);padding:5px 10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+.toolbar select,.toolbar button{background:rgba(0,30,0,0.8);color:var(--fg);border:1px solid var(--border);padding:4px 10px;font-family:var(--font);font-size:11px;cursor:pointer;transition:0.2s}
+.toolbar select:hover,.toolbar button:hover{border-color:var(--fg)}
+.toolbar select option{background:#001a05;color:var(--fg)}
+.toolbar label{font-size:10px;color:var(--fg3);letter-spacing:0.5px}
+.toolbar .sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+.toolbar .spacer{flex:1}
+.toolbar .quick-btn{font-size:10px;padding:3px 8px;background:rgba(0,60,0,0.3);border-color:rgba(0,255,65,0.15)}
+.toolbar .quick-btn:hover{background:rgba(0,80,0,0.5);border-color:var(--fg3)}
+
+/* TABS */
+.tab-bar{display:flex;background:rgba(0,8,0,0.9);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.tab-bar::-webkit-scrollbar{height:2px}
+.tab-bar::-webkit-scrollbar-track{background:transparent}
+.tab-bar::-webkit-scrollbar-thumb{background:var(--fg3)}
+.tab-item{padding:5px 14px;font-size:10px;cursor:pointer;border-right:1px solid var(--border);color:var(--fg3);white-space:nowrap;transition:0.2s;display:flex;align-items:center;gap:6px}
+.tab-item:hover{color:var(--fg);background:rgba(0,255,65,0.05)}
+.tab-item.active{color:var(--fg);border-bottom:2px solid var(--fg);background:rgba(0,255,65,0.03)}
+.tab-item .tab-close{color:var(--fg3);font-size:12px;cursor:pointer;opacity:0;transition:0.2s}
+.tab-item:hover .tab-close{opacity:0.6}
+.tab-item .tab-close:hover{color:var(--red);opacity:1}
+.tab-item .tab-indicator{width:6px;height:6px;border-radius:50%;display:inline-block}
+.tab-item .tab-indicator.running{background:var(--yellow);animation:pulse 1s infinite}
+.tab-item .tab-indicator.done{background:var(--fg)}
+.tab-item .tab-indicator.error{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* TERMINAL */
+.terminal-container{flex:1;overflow:hidden;position:relative}
+.terminal{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;padding:10px 14px;font-size:13px;line-height:1.5;background:rgba(0,0,0,0.7)}
+.terminal::-webkit-scrollbar{width:4px}
+.terminal::-webkit-scrollbar-track{background:transparent}
+.terminal::-webkit-scrollbar-thumb{background:var(--fg3);border-radius:2px}
+.terminal .line{margin-bottom:1px;white-space:pre-wrap;word-break:break-word;animation:fadeIn 0.15s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}
+.terminal .line.system{color:var(--fg3)}
+.terminal .line.agent{color:var(--fg)}
+.terminal .line.agent::before{content:"▸ ";color:var(--fg3)}
+.terminal .line.command{color:var(--cyan)}
+.terminal .line.command::before{content:"$ ";color:var(--fg3)}
+.terminal .line.error{color:var(--red)}
+.terminal .line.error::before{content:"✗ ";color:var(--red)}
+.terminal .line.success{color:var(--fg)}
+.terminal .line.warning{color:var(--yellow)}
+.terminal .line.warning::before{content:"⚠ ";color:var(--yellow)}
+.terminal .line.info{color:var(--cyan)}
+.terminal .line.agent-start{color:var(--yellow);text-align:center;margin:6px 0}
+.terminal .line.agent-start::before{content:"━━━ ";color:var(--fg3)}
+.terminal .line.agent-start::after{content:" ━━━";color:var(--fg3)}
+.terminal .line.agent-done{color:var(--fg);font-weight:bold;text-align:center;margin:4px 0;border-top:1px solid var(--border);padding-top:4px}
+.terminal .line.decision{color:var(--cyan)}
+.terminal .line.output{color:#b0b0b0;font-size:12px}
+.terminal .line.output.highlight{color:var(--fg);background:rgba(0,255,65,0.03);padding:2px 6px;border-left:2px solid var(--fg)}
+.terminal .line.prompt{color:var(--fg3);margin-top:8px}
+.terminal::-webkit-scrollbar-thumb{background:var(--fg3)}
+
+/* INPUT */
+.input-area{background:rgba(0,8,0,0.95);border-top:1px solid var(--border);padding:6px 10px;flex-shrink:0;backdrop-filter:blur(5px)}
+.input-row{display:flex;gap:6px;align-items:center}
+.input-row .input-wrap{flex:1;position:relative}
+.input-row input[type="text"]{width:100%;background:rgba(0,20,0,0.9);color:var(--fg);border:1px solid var(--border);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;transition:0.2s}
+.input-row input[type="text"]:focus{border-color:var(--fg);box-shadow:0 0 8px rgba(0,255,65,0.15)}
+.input-row input[type="text"]::placeholder{color:var(--fg3);opacity:0.5}
+.input-row .input-mode{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--fg3);letter-spacing:1px;pointer-events:none}
+.input-row button{background:rgba(0,40,0,0.8);color:var(--fg);border:1px solid var(--border);padding:7px 16px;font-family:var(--font);font-size:12px;cursor:pointer;transition:0.2s}
+.input-row button:hover{border-color:var(--fg);box-shadow:var(--glow)}
+.input-row button:disabled{opacity:0.3;cursor:not-allowed}
+.input-row button.primary{background:rgba(0,80,0,0.5);border-color:var(--fg)}
+.input-row button.primary:hover{background:rgba(0,120,0,0.6)}
+.input-row button.danger{color:var(--red);border-color:var(--red)}
+.input-row button.danger:hover{background:rgba(255,0,0,0.1)}
+
+/* STATS BAR */
+.stats-bar{background:rgba(0,8,0,0.95);border-top:1px solid var(--border);padding:2px 12px;font-size:9px;color:var(--fg3);display:flex;gap:14px;flex-shrink:0;align-items:center}
+.stats-bar span{display:flex;align-items:center;gap:4px}
+.stats-bar .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.dot.green{background:var(--fg)}
+.dot.yellow{background:var(--yellow)}
+.dot.red{background:var(--red)}
+
+/* CONFIG PANEL */
+.overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:100;backdrop-filter:blur(5px)}
+.overlay.open{display:block}
+.panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(5,15,5,0.98);border:1px solid var(--border);padding:20px;z-index:101;min-width:500px;max-width:700px;max-height:85vh;overflow-y:auto;border-radius:4px;box-shadow:0 0 40px rgba(0,255,65,0.08)}
+.panel.open{display:block}
+.panel .close-btn{float:right;cursor:pointer;color:var(--red);font-size:20px;opacity:0.6;transition:0.2s}
+.panel .close-btn:hover{opacity:1}
+.panel h2{color:var(--fg);font-size:14px;letter-spacing:2px;margin-bottom:12px;text-shadow:var(--glow)}
+.panel h2 span{color:var(--cyan)}
+.panel label{display:block;color:var(--fg3);font-size:10px;margin-top:10px;letter-spacing:1px;text-transform:uppercase}
+.panel select,.panel input{width:100%;background:rgba(0,20,0,0.9);color:var(--fg);border:1px solid var(--border);padding:6px 8px;font-family:var(--font);font-size:12px;margin-top:3px;outline:none}
+.panel select:focus,.panel input:focus{border-color:var(--fg)}
+.panel table{width:100%;font-size:10px;margin-top:8px;border-collapse:collapse}
+.panel th{color:var(--fg3);text-align:left;padding:3px 6px;border-bottom:1px solid var(--border);font-size:9px;letter-spacing:1px;text-transform:uppercase}
+.panel td{padding:2px 6px;border-bottom:1px solid rgba(0,255,65,0.06)}
+.panel .tool-avail{color:var(--fg)}
+.panel .tool-miss{color:var(--red)}
+.panel .btn-row{display:flex;gap:6px;margin-top:12px}
+.panel .btn-row button{background:rgba(0,40,0,0.8);color:var(--fg);border:1px solid var(--border);padding:5px 12px;font-family:var(--font);font-size:11px;cursor:pointer}
+.panel .btn-row button:hover{border-color:var(--fg)}
+
+/* NOTIFICATIONS */
+.notification{position:fixed;bottom:60px;right:20px;z-index:200;background:rgba(0,10,0,0.95);border:1px solid var(--border);padding:10px 16px;font-size:11px;border-radius:4px;box-shadow:0 0 20px rgba(0,255,65,0.1);max-width:350px;animation:slideIn 0.3s}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+.notification .n-title{color:var(--fg);font-weight:bold;margin-bottom:4px}
+.notification .n-msg{color:var(--fg3)}
+
+/* MISC */
+.flex-center{display:flex;align-items:center;justify-content:center}
+.gap-4{gap:4px}
+
+@media(max-width:768px){
+.sidebar{display:none}
+.panel{min-width:90%;max-width:95%}
+.header h1{font-size:12px}
+.header .info .badge{font-size:8px;padding:1px 4px}
+.toolbar select,.toolbar button{font-size:9px;padding:2px 6px}
+.toolbar .quick-btn{display:none}
+}
+
+/* Scrollbar general */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--fg3);border-radius:2px}
+</style>
+</head>
+<body>
+
+<canvas id="matrixCanvas"></canvas>
+
+<div class="app">
+  <!-- HEADER -->
+  <div class="header">
+    <h1><span>⧩</span> ARNES HACKER <span>v2.0</span></h1>
+    <div class="info">
+      <span class="badge" id="modelBadge" onclick="openPanel('config')">Modelo: --</span>
+      <span class="badge ollama-off" id="ollamaBadge" onclick="checkOllama()">Ollama: --</span>
+      <span class="badge" id="toolsBadge">Tools: --</span>
+      <span class="badge" onclick="openPanel('config')">⚙ Config</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-tabs">
+        <button class="active" data-tab="sessions">SESIONES</button>
+        <button data-tab="creds">CREDS</button>
+        <button data-tab="targets">TARGETS</button>
+      </div>
+      <div class="sidebar-content">
+        <div class="section active" id="tab-sessions"><div id="sessionList"><div class="item" style="color:var(--fg3)">(cargando...)</div></div></div>
+        <div class="section" id="tab-creds"><div id="credList"><div class="item" style="color:var(--fg3)">Sin credenciales</div></div></div>
+        <div class="section" id="tab-targets"><div id="targetList"><div class="item" style="color:var(--fg3)">Sin objetivos</div></div></div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <label>MODO:</label>
+        <select id="modeSelect">
+          <option value="auto">🤖 AUTO (orquestador)</option>
+          <option value="shell">⌨ SHELL (comandos directos)</option>
+        </select>
+        <div class="sep"></div>
+        <label>AGENTE:</label>
+        <select id="agentSelect">
+          <option value="auto">⏎ auto</option>
+          <option value="recon">recon</option>
+          <option value="exploit">exploit</option>
+          <option value="osint">osint</option>
+          <option value="post_exploit">post_exploit</option>
+          <option value="pivoting">pivoting</option>
+          <option value="malware">malware</option>
+          <option value="undercover">undercover</option>
+          <option value="evasion">evasion</option>
+        </select>
+        <div class="sep"></div>
+        <label>RAPIDO:</label>
+        <button class="quick-btn" onclick="quickMission('escaneo_completo')">📡 Escanear</button>
+        <button class="quick-btn" onclick="quickMission('compromiso_rapido')">💀 Comprometer</button>
+        <button class="quick-btn" onclick="quickMission('osint_profundo')">🔍 OSINT</button>
+        <div class="spacer"></div>
+        <button id="stopBtn" disabled onclick="stopMission()" style="color:var(--red)">⏹ STOP</button>
+        <button onclick="clearTerminal()">✕ Limpiar</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-bar" id="tabBar">
+        <div class="tab-item active" data-tab="main">
+          <span class="tab-indicator" id="mainIndicator"></span>
+          MISION PRINCIPAL
+        </div>
+      </div>
+
+      <!-- Terminal -->
+      <div class="terminal-container">
+        <div class="terminal" id="terminal">
+          <div class="line system">[sistema] ARNES HACKER v2.0 inicializado</div>
+          <div class="line system">[sistema] Conectando con Ollama...</div>
+          <div class="line prompt">▸ Escribe una mision o usa los botones rapidos</div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-bar">
+        <span><span class="dot green" id="statusDot"></span><span id="statusText">Inactivo</span></span>
+        <span id="statModelo">Modelo: --</span>
+        <span id="statTools">Tools: --</span>
+        <span id="statSessions">Sesiones: 0</span>
+      </div>
+
+      <!-- Input -->
+      <div class="input-area">
+        <div class="input-row">
+          <div class="input-wrap">
+            <input type="text" id="missionInput" placeholder="Ej: Escanea example.com y dime los puertos abiertos" autofocus>
+            <span class="input-mode" id="inputModeLabel">MISION</span>
+          </div>
+          <button class="primary" id="sendBtn" onclick="sendMission()">▶ EJECUTAR</button>
+          <button onclick="openPanel('playbooks')">📋 Playbooks</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY + CONFIG PANEL -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel-config">
+  <span class="close-btn" onclick="closePanel()">×</span>
+  <h2>⚙ <span>CONFIGURACION</span></h2>
+
+  <label>Modelo LLM (Ollama)</label>
+  <select id="modelSelect" onchange="selectModel(this.value)"></select>
+
+  <label>Hardware detectado</label>
+  <div id="hardwareInfo" style="font-size:11px;color:var(--fg3);margin-top:3px">Detectando...</div>
+
+  <h3 style="color:var(--fg);margin-top:16px;font-size:11px;letter-spacing:1px">HERRAMIENTAS DEL SISTEMA</h3>
+  <table><thead><tr><th>Herramienta</th><th>Estado</th><th>Categoria</th></tr></thead><tbody id="toolsTable"></tbody></table>
+</div>
+
+<!-- PLAYBOOKS PANEL -->
+<div class="panel" id="panel-playbooks">
+  <span class="close-btn" onclick="closePanel()">×</span>
+  <h2>📋 <span>PLAYBOOKS</span></h2>
+  <p style="font-size:11px;color:var(--fg3);margin-bottom:10px">Misiones predefinidas. Selecciona y ejecuta.</p>
+  <div id="playbookList"></div>
+</div>
+
+<script>
+// ===================== MATRIX RAIN =====================
+const canvas = document.getElementById('matrixCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, cols, drops;
+
+function resizeMatrix() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cols = Math.floor(W / 14);
+  drops = Array(cols).fill(1);
+}
+resizeMatrix();
+window.addEventListener('resize', resizeMatrix);
+
+const chars = 'ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+function drawMatrix() {
+  ctx.fillStyle = 'rgba(10,14,10,0.06)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#00ff41';
+  ctx.font = '13px monospace';
+  for (let i = 0; i < drops.length; i++) {
+    const text = chars[Math.floor(Math.random() * chars.length)];
+    ctx.fillStyle = Math.random() > 0.98 ? '#00ff41' : '#004a00';
+    ctx.fillText(text, i * 14, drops[i] * 14);
+    if (drops[i] * 14 > H && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  }
+}
+setInterval(drawMatrix, 50);
+
+// ===================== STATE =====================
+const ws = new WebSocket(`ws://${location.host}/ws`);
+const terminal = document.getElementById('terminal');
+const missionInput = document.getElementById('missionInput');
+const sendBtn = document.getElementById('sendBtn');
+const stopBtn = document.getElementById('stopBtn');
+const modeSelect = document.getElementById('modeSelect');
+const agentSelect = document.getElementById('agentSelect');
+let running = false;
+let currentModel = null;
+let currentSessionId = null;
+let shellMode = false;
+
+// ===================== WS =====================
+ws.onopen = () => {
+  addLine('system', '[sistema] WebSocket conectado');
+  checkOllama();
+  loadStatus();
+  loadSidebar();
+};
+
+ws.onmessage = (event) => {
+  try {
+    const msg = JSON.parse(event.data);
+    switch(msg.type) {
+      case 'log':
+        addLine(msg.content_type === 'command' ? 'command' : 'agent', msg.content, msg.agent);
+        break;
+      case 'system': addLine('system', `[sistema] ${msg.content}`); break;
+      case 'decision': addLine('decision', `[orquestador] ${msg.content}`); break;
+      case 'agent_start': addLine('agent-start', ` ${msg.agent.toUpperCase()} `); break;
+      case 'agent_done':
+        addLine('agent-done', `[${msg.agent}] COMPLETADO`);
+        break;
+      case 'complete':
+        addLine('system', `[sistema] ${msg.summary || 'Mision completada'}`);
+        setRunning(false);
+        currentSessionId = msg.session_id || null;
+        loadSidebar();
+        break;
+      case 'error': addLine('error', msg.content); setRunning(false); break;
+      case 'ws_done': setRunning(false); break;
+      case 'ollama_status': updateOllamaStatus(msg); break;
+      case 'shell_result':
+        addLine('system', `[shell] exit=${msg.exit_code}`);
+        if (msg.stdout) addLine('output', msg.stdout);
+        if (msg.stderr) addLine('error', msg.stderr);
+        setRunning(false);
+        currentSessionId = msg.session_id || currentSessionId;
+        break;
+    }
+  } catch(e) {}
+};
+
+// ===================== UI =====================
+function addLine(type, content, agent) {
+  const div = document.createElement('div');
+  div.className = `line ${type}`;
+  if (agent && type === 'agent') {
+    div.textContent = content;
+  } else {
+    div.textContent = content;
+  }
+  terminal.appendChild(div);
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+function setRunning(state) {
+  running = state;
+  sendBtn.disabled = state;
+  stopBtn.disabled = !state;
+  missionInput.disabled = state;
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  dot.className = `dot ${state ? 'yellow' : 'green'}`;
+  text.textContent = state ? 'ACTIVO' : 'Inactivo';
+  document.getElementById('mainIndicator').className = `tab-indicator ${state ? 'running' : ''}`;
+}
+
+function clearTerminal() {
+  terminal.innerHTML = '';
+  addLine('system', '[sistema] Terminal limpiado');
+  addLine('prompt', '▸ Escribe una mision o usa los botones rapidos');
+}
+
+// ===================== MISSION =====================
+function sendMission() {
+  const input = missionInput.value.trim();
+  if (!input || running) return;
+
+  if (shellMode) {
+    sendShellCommand(input);
+    return;
+  }
+
+  addLine('system', `[sistema] Enviando mision...`);
+  addLine('system', `[sistema] "${input}"`);
+
+  const agent = agentSelect.value;
+  const model = currentModel;
+
+  ws.send(JSON.stringify({
+    action: 'mission',
+    mission: input,
+    model: model,
+    agent: agent === 'auto' ? 'auto' : agent
+  }));
+
+  missionInput.value = '';
+  setRunning(true);
+}
+
+function sendShellCommand(cmd) {
+  addLine('command', cmd);
+  ws.send(JSON.stringify({
+    action: 'shell',
+    command: cmd,
+    session_id: currentSessionId || ''
+  }));
+  missionInput.value = '';
+  setRunning(true);
+}
+
+function stopMission() {
+  ws.send(JSON.stringify({ action: 'stop' }));
+  addLine('system', '[sistema] ABORTANDO...');
+}
+
+async function quickMission(name) {
+  try {
+    const resp = await fetch('/api/playbooks');
+    const data = await resp.json();
+    const pb = data.playbooks.find(p => p.name === name);
+    if (!pb) { addLine('error', `Playbook '${name}' no encontrado`); return; }
+    missionInput.value = `[${pb.name}] ${pb.prompt_template}`;
+    sendMission();
+  } catch(e) {
+    addLine('error', `Error: ${e}`);
+  }
+}
+
+// ===================== MODE SWITCH =====================
+modeSelect.addEventListener('change', () => {
+  shellMode = modeSelect.value === 'shell';
+  document.getElementById('inputModeLabel').textContent = shellMode ? 'SHELL' : 'MISION';
+  missionInput.placeholder = shellMode
+    ? 'Escribe un comando shell (ej: nmap -sV 127.0.0.1)'
+    : 'Ej: Escanea example.com y dime los puertos abiertos';
+  agentSelect.disabled = shellMode;
+});
+
+// ===================== STATUS & API =====================
+async function loadStatus() {
+  try {
+    const resp = await fetch('/api/status');
+    const data = await resp.json();
+
+    document.getElementById('statModelo').textContent = `Modelo: ${data.current_model || data.suggested_model || '--'}`;
+    document.getElementById('statTools').textContent = `Tools: ${data.tools_available}/${data.tools_total}`;
+    document.getElementById('toolsBadge').textContent = `Tools: ${data.tools_available}/${data.tools_total}`;
+
+    if (!currentModel) currentModel = data.suggested_model;
+    updateOllamaStatus({ running: data.ollama_running, models: data.models });
+
+    if (data.tools_missing && data.tools_missing.length > 0) {
+      addLine('warning', `Tools faltantes: ${data.tools_missing.join(', ')}`);
+    }
+
+    if (data.sessions) {
+      document.getElementById('statSessions').textContent = `Sesiones: ${data.sessions.length}`;
+    }
+  } catch(e) {
+    addLine('error', `Error de conexion: ${e}`);
+  }
+}
+
+function checkOllama() {
+  ws.send(JSON.stringify({ action: 'check_ollama' }));
+}
+
+function updateOllamaStatus(data) {
+  const badge = document.getElementById('ollamaBadge');
+  if (data.running) {
+    badge.textContent = `Ollama: ${data.models.length} modelos`;
+    badge.className = 'badge ollama-on';
+    loadHardware();
+  } else {
+    badge.textContent = 'Ollama: DESCONECTADO';
+    badge.className = 'badge ollama-off';
+  }
+}
+
+async function loadHardware() {
+  try {
+    const resp = await fetch('/api/hardware');
+    const data = await resp.json();
+    const hw = data.hardware;
+    document.getElementById('hardwareInfo').innerHTML =
+      `GPU: ${hw.has_nvidia ? 'NVIDIA' : (hw.has_rocm ? 'AMD ROCm' : 'No detectada')} ` +
+      `| VRAM: ${hw.gpu_memory_gb}GB | RAM: ${hw.total_ram_gb}GB`;
+
+    const sel = document.getElementById('modelSelect');
+    sel.innerHTML = `<option value="${data.suggested_model}">${data.suggested_model} (recomendado)</option>`;
+    sel.value = data.suggested_model;
+    if (!currentModel) currentModel = data.suggested_model;
+    document.getElementById('modelBadge').textContent = `Modelo: ${data.current_model || data.suggested_model}`;
+
+    try {
+      const r2 = await fetch('/api/models');
+      const d2 = await r2.json();
+      if (d2.models) d2.models.forEach(m => {
+        if (m !== data.suggested_model) {
+          const opt = document.createElement('option');
+          opt.value = m; opt.textContent = m;
+          sel.appendChild(opt);
+        }
+      });
+    } catch(e) {}
+  } catch(e) {}
+}
+
+async function loadTools() {
+  try {
+    const resp = await fetch('/api/tools');
+    const data = await resp.json();
+    const tbody = document.getElementById('toolsTable');
+    tbody.innerHTML = '';
+    data.tools.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${t.name}</td><td class="${t.available ? 'tool-avail' : 'tool-miss'}">${t.available ? '✓' : '✗'}</td><td>${t.category}</td>`;
+      tbody.appendChild(tr);
+    });
+  } catch(e) {}
+}
+
+// ===================== SIDEBAR =====================
+async function loadSidebar() {
+  try {
+    const resp = await fetch('/api/sessions');
+    const data = await resp.json();
+    const list = document.getElementById('sessionList');
+    list.innerHTML = '';
+    if (!data.sessions || data.sessions.length === 0) {
+      list.innerHTML = '<div class="item" style="color:var(--fg3)">Sin sesiones</div>';
+    } else {
+      data.sessions.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.onclick = () => loadSession(s.id);
+        div.innerHTML = `<div class="s-date">${s.created || '?'}</div><div class="s-mission">${(s.mission || '?').substring(0, 40)}</div><div class="s-status">[${s.status}]</div>`;
+        list.appendChild(div);
+      });
+    }
+
+    // Creds
+    const cr = await fetch('/api/credentials');
+    const cd = await cr.json();
+    const cl = document.getElementById('credList');
+    cl.innerHTML = '';
+    if (!cd.credentials || cd.credentials.length === 0) {
+      cl.innerHTML = '<div class="item" style="color:var(--fg3)">Sin credenciales</div>';
+    } else {
+      cd.credentials.slice(0, 30).forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'cred-item';
+        div.innerHTML = `<span class="cred-user">${c.username || '?'}</span>:<span class="cred-pass">${c.password || c.hash || '?'}</span> <span class="cred-target">@${c.target || '?'} [${c.service || '?'}]</span>`;
+        cl.appendChild(div);
+      });
+    }
+
+    // Targets
+    const tr = await fetch('/api/targets');
+    const td = await tr.json();
+    const tl = document.getElementById('targetList');
+    tl.innerHTML = '';
+    if (!td.targets || td.targets.length === 0) {
+      tl.innerHTML = '<div class="item" style="color:var(--fg3)">Sin objetivos</div>';
+    } else {
+      td.targets.slice(0, 30).forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `<span style="color:var(--cyan)">${t.target || '?'}</span> <span style="color:var(--fg3)">${t.ports || ''}</span>`;
+        tl.appendChild(div);
+      });
+    }
+
+  } catch(e) {}
+}
+
+async function loadSession(id) {
+  try {
+    const resp = await fetch(`/api/sessions/${id}`);
+    const data = await resp.json();
+    addLine('system', `[sistema] Cargando sesion ${id}...`);
+    addLine('system', `[sistema] Mision: ${data.session?.mission || ''}`);
+    if (data.logs) data.logs.forEach(l => {
+      addLine('output', `[${l.agent}] ${(l.content || '').substring(0, 400)}`);
+    });
+    addLine('system', `[sistema] Fin de sesion ${id}`);
+    closePanel();
+  } catch(e) {
+    addLine('error', `Error cargando sesion: ${e}`);
+  }
+}
+
+async function selectModel(model) {
+  try {
+    await fetch('/api/models/select', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ model })
+    });
+    currentModel = model;
+    document.getElementById('modelBadge').textContent = `Modelo: ${model}`;
+    addLine('system', `[sistema] Modelo cambiado a: ${model}`);
+  } catch(e) {
+    addLine('error', `Error: ${e}`);
+  }
+}
+
+// ===================== LOAD PLAYBOOKS =====================
+async function loadPlaybooks() {
+  try {
+    const resp = await fetch('/api/playbooks');
+    const data = await resp.json();
+    const div = document.getElementById('playbookList');
+    div.innerHTML = '';
+    if (!data.playbooks || data.playbooks.length === 0) {
+      div.innerHTML = '<div style="color:var(--fg3);font-size:11px">Sin playbooks</div>';
+      return;
+    }
+    data.playbooks.forEach(p => {
+      const card = document.createElement('div');
+      card.style.cssText = 'border:1px solid var(--border);padding:10px;margin-bottom:6px;border-radius:3px;cursor:pointer;transition:0.2s';
+      card.onmouseover = () => card.style.borderColor = 'var(--fg)';
+      card.onmouseout = () => card.style.borderColor = 'var(--border)';
+      card.onclick = () => {
+        missionInput.value = `[${p.name}] ${p.prompt_template || p.description}`;
+        closePanel();
+        sendMission();
+      };
+      card.innerHTML = `
+        <div style="color:var(--fg);font-size:12px;margin-bottom:4px">▶ ${p.name}</div>
+        <div style="color:var(--fg3);font-size:10px">${p.description || ''}</div>
+        <div style="color:var(--cyan);font-size:9px;margin-top:4px">Agentes: ${p.agents || ''}</div>
+      `;
+      div.appendChild(card);
+    });
+  } catch(e) {}
+}
+
+// ===================== PANELS =====================
+function openPanel(name) {
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById(`panel-${name}`).classList.add('open');
+  if (name === 'config') { loadHardware(); loadTools(); }
+  if (name === 'playbooks') { loadPlaybooks(); }
+}
+
+function closePanel() {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// ===================== TABS =====================
+document.querySelectorAll('.sidebar-tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.sidebar-content .section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+  });
+});
+
+// ===================== EVENTS =====================
+missionInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendMission();
+});
+
+// ===================== INIT =====================
+loadStatus();
+loadSidebar();
+setInterval(loadSidebar, 10000);
+setInterval(loadStatus, 30000);
+
+// Hide model selector from displayed panel when opening config initially
+</script>
+</body>
+</html>
